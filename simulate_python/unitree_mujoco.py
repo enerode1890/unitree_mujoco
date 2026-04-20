@@ -11,6 +11,7 @@ import config
 
 
 locker = threading.Lock()
+_sim_step_count = 0
 
 mj_model = mujoco.MjModel.from_xml_path(config.ROBOT_SCENE)
 mj_data = mujoco.MjData(mj_model)
@@ -36,7 +37,7 @@ time.sleep(0.2)
 
 
 def SimulationThread():
-    global mj_data, mj_model
+    global mj_data, mj_model, _sim_step_count
 
     ChannelFactoryInitialize(config.DOMAIN_ID, config.INTERFACE)
     unitree = UnitreeSdk2Bridge(mj_model, mj_data)
@@ -45,12 +46,10 @@ def SimulationThread():
         unitree.SetupJoystick(device_id=0, js_type=config.JOYSTICK_TYPE)
     if config.PRINT_SCENE_INFORMATION:
         unitree.PrintSceneInformation()
-
     while viewer.is_running():
         step_start = time.perf_counter()
 
         locker.acquire()
-
         if config.ENABLE_ELASTIC_BAND:
             if elastic_band.enable:
                 mj_data.xfrc_applied[band_attached_link, :3] = elastic_band.Advance(
